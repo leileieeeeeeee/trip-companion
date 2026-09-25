@@ -6,7 +6,7 @@
 .tabs{display:flex;gap:7px;overflow:auto;position:sticky;top:0;background:linear-gradient(var(--bg) 83%,transparent);padding:8px 0 7px;z-index:5}.tab{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 11px;white-space:nowrap;font-weight:750;color:#5b656c}.tab.on{background:var(--navy);color:white}.tab.past{opacity:.38}
 .now{background:linear-gradient(135deg,#173d4b,#18748c);color:white;border-radius:21px;padding:16px;margin-top:3px}.now small{opacity:.72}.now h2{margin:4px 0 2px;font-size:23px}.now p{margin:5px 0 0;opacity:.86}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.btn{border:0;border-radius:999px;padding:8px 11px;font-weight:750;background:#e9f1f3;color:#17596b}.now .btn{background:#ffffff22;color:#fff}.now .primary{background:white;color:#17495a}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:13px;margin-top:9px}.status{font-size:12px;color:var(--muted)}.hotel{border-left:4px solid var(--gold)}.event{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:12px 0;border-top:1px solid #eee7dd;transition:.2s}.event:first-child{border-top:0}.event.done{opacity:.32}.event.overdue{background:#fff7e8;margin:0 -7px;padding-left:7px;padding-right:7px;border-radius:10px}.event b{font-size:14px}.event small{color:var(--muted);line-height:1.4}.pill{font-size:10px;border-radius:999px;padding:4px 6px;background:#edf2f3;align-self:start}.lock{background:#eee8df}.warn{background:#fff0cf;color:#7b571e}.food{display:flex;justify-content:space-between;align-items:center;gap:8px}.bottom{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:min(95%,735px);display:flex;gap:7px;padding:7px;background:#fffefae9;backdrop-filter:blur(11px);border:1px solid var(--line);border-radius:17px;box-shadow:0 7px 25px #0002}.bottom button{flex:1}.primary{background:var(--blue);color:white}.dark{background:#252b31;color:white}.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#f7f4ed;border-radius:12px;padding:10px}.sheet{display:none;position:fixed;inset:0;background:#0005;z-index:20;align-items:flex-end}.sheet.on{display:flex}.sheetin{background:var(--card);width:min(100%,760px);margin:auto;border-radius:22px 22px 0 0;padding:17px 15px 27px}.sheetin h3{margin:0}.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.quick button{border:0;border-radius:12px;padding:12px;background:#f1eee7;font-weight:700}
 </style></head><body><main>
-<header class="head"><div class="title"><b>Australia 2026</b><small>悉尼 × 黄金海岸 · 本地模式</small></div><div class="avatars"><div class="av">J</div><div class="av b">搭</div></div></header>
+<header class="head"><div class="title"><b>Australia 2026 <span style="font-size:10px;opacity:.55">V7.3</span></b><small>悉尼 × 黄金海岸 · 本地模式</small></div><div class="avatars"><div class="av">J</div><div class="av b">搭</div></div></header>
 <nav class="tabs" id="tabs"></nav><div id="view"></div>
 </main>
 <div class="bottom"><button class="btn" onclick="food()">🍴 吃什么</button><button class="btn primary" onclick="update()">↻ 更新</button><button class="btn dark" onclick="gpt()">✦ GPT审核</button></div>
@@ -209,27 +209,32 @@ async function tc71Status(kind,msg){
 async function tc71Boot(){
  try{
    await tc71Status("info","☁ 正在连接 Trip Companion 云端…");
-   if(!window.tripSupabase) throw new Error("Supabase 客户端未初始化");
-   const {data:{session},error:se}=await window.tripSupabase.auth.getSession();
+   const cloudSB = window.tripSupabase || (window.supabase ? window.supabase.createClient(
+     "https://dstkvlhjomuyoceijfft.supabase.co",
+     "sb_publishable_DkP-qII7LMS2C-FuBhPAeQ_tOeA_MiM"
+   ) : null);
+   if(!cloudSB) throw new Error("Supabase SDK 未加载");
+   window.tripSupabase = cloudSB;
+   const {data:{session},error:se}=await cloudSB.auth.getSession();
    if(se) throw se;
    if(!session){await tc71Status("info","本地模式 · 请先使用 Google 登录");return}
    TC_USER=session.user;
-   let q=await window.tripSupabase.from("trips").select("*").eq("slug","australia-2026").limit(1);
+   let q=await cloudSB.from("trips").select("*").eq("slug","australia-2026").limit(1);
    if(q.error) throw new Error("读取 trips 失败："+q.error.message);
    if(q.data && q.data.length){
      TC_TRIP=q.data[0];
    }else{
-     let c=await window.tripSupabase.from("trips").insert({
+     let c=await cloudSB.from("trips").insert({
        owner_id:TC_USER.id,name:"Australia 2026",slug:"australia-2026",
        start_date:"2026-09-26",end_date:"2026-10-04",timezone:"Australia/Sydney"
      }).select().single();
      if(c.error) throw new Error("创建 trip 失败："+c.error.message);
      TC_TRIP=c.data;
      let rows=TC_SEED.map(x=>({trip_id:TC_TRIP.id,event_date:x[0],event_time:x[1]+":00",title:x[2],place_name:x[3],locked:x[4],created_by:TC_USER.id}));
-     let ins=await window.tripSupabase.from("events").insert(rows);
+     let ins=await cloudSB.from("events").insert(rows);
      if(ins.error) throw new Error("导入 events 失败："+ins.error.message);
    }
-   let ev=await window.tripSupabase.from("events").select("*").eq("trip_id",TC_TRIP.id).order("event_date").order("event_time");
+   let ev=await cloudSB.from("events").select("*").eq("trip_id",TC_TRIP.id).order("event_date").order("event_time");
    if(ev.error) throw new Error("读取 events 失败："+ev.error.message);
    TC_EVENTS=ev.data||[];
    await tc71Status("ok",`☁ Australia 2026 云端正常 · ${TC_EVENTS.length} 个行程项目`);
