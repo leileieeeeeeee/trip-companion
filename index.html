@@ -56,4 +56,50 @@ async function liveWeatherFor(city){
 }
 if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js");
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const tripSupabase = window.supabase.createClient(
+  "https://dstkvlhjomuyoceijfft.supabase.co",
+  "sb_publishable_DkP-qII7LMS2C-FuBhPAeQ_tOeA_MiM"
+);
+async function tripSignIn(){
+  const {error}=await tripSupabase.auth.signInWithOAuth({
+    provider:"google",
+    options:{redirectTo:"https://leileieeeeeeee.github.io/trip-companion/"}
+  });
+  if(error) alert("登录失败："+error.message);
+}
+async function tripSignOut(){
+  await tripSupabase.auth.signOut();
+  location.reload();
+}
+async function renderTripAuth(){
+  const {data:{session}}=await tripSupabase.auth.getSession();
+  let bar=document.getElementById("tripAuthBar");
+  if(!bar){
+    bar=document.createElement("div");
+    bar.id="tripAuthBar";
+    bar.style.cssText="max-width:760px;margin:8px auto 0;padding:0 11px;display:flex;justify-content:flex-end;align-items:center;gap:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif";
+    document.body.insertBefore(bar,document.body.firstChild);
+  }
+  if(session){
+    const u=session.user, name=u.user_metadata?.full_name||u.user_metadata?.name||u.email;
+    const avatar=u.user_metadata?.avatar_url;
+    bar.innerHTML=`${avatar?`<img src="${avatar}" style="width:28px;height:28px;border-radius:50%">`:""}<span style="font-size:12px;color:#657078">${name} · 已同步</span><button onclick="tripSignOut()" style="border:0;border-radius:999px;padding:7px 10px">退出</button>`;
+    await ensureProfile(u);
+  }else{
+    bar.innerHTML=`<span style="font-size:12px;color:#657078">本地模式 · 登录后同步</span><button onclick="tripSignIn()" style="border:0;border-radius:999px;padding:8px 11px;background:#173d4b;color:white;font-weight:700">使用 Google 登录</button>`;
+  }
+}
+async function ensureProfile(u){
+  await tripSupabase.from("profiles").upsert({
+    id:u.id,
+    display_name:u.user_metadata?.full_name||u.user_metadata?.name||u.email?.split("@")[0],
+    avatar_url:u.user_metadata?.avatar_url||null
+  },{onConflict:"id"});
+}
+tripSupabase.auth.onAuthStateChange(()=>setTimeout(renderTripAuth,0));
+renderTripAuth();
+</script>
 </body></html>
