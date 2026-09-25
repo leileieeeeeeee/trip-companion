@@ -2,7 +2,7 @@
 <style>
 :root{--bg:#f5f2eb;--card:#fffefa;--ink:#17232b;--muted:#748087;--line:#e5ddd1;--blue:#176d87;--navy:#173d4b;--gold:#d69a3b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}button,input{font:inherit}main{max-width:760px;margin:auto;padding:10px 11px 80px}.head{display:flex;justify-content:space-between;align-items:center;padding:7px 2px}.muted{font-size:12px;color:var(--muted)}.tabs{display:flex;gap:7px;overflow:auto;position:sticky;top:0;background:linear-gradient(var(--bg) 82%,transparent);padding:8px 0;z-index:4}.tab,.btn{border:0;border-radius:999px;padding:8px 11px;font-weight:750}.tab{border:1px solid var(--line);background:var(--card);white-space:nowrap;color:#5b656c}.tab.on{background:var(--navy);color:#fff}.tab.past{opacity:.38}.now{background:linear-gradient(135deg,#173d4b,#18748c);color:white;border-radius:21px;padding:16px}.now h2{margin:4px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:13px;margin-top:9px}.hotel{border-left:4px solid var(--gold)}.event{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:12px 0;border-top:1px solid #eee7dd}.event:first-child{border-top:0}.event.done{opacity:.3}.event.over{background:#fff7e8;margin:0 -6px;padding-left:6px;padding-right:6px;border-radius:10px}.event small{color:var(--muted)}.pill{border:0;border-radius:999px;padding:5px 7px}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.primary{background:var(--blue);color:white}.soft{background:#e9f1f3;color:#17596b}.weather{display:flex;gap:5px;flex-wrap:wrap}.chip{font-size:11px;background:#edf3f4;border-radius:999px;padding:5px 8px}.status{padding:8px 10px;border-radius:12px;background:#edf4f5;margin-bottom:8px;font-size:12px}.edit{color:#176d87;border:0;background:none;padding:0;font-size:12px}.toast{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 11px;border-radius:10px;display:none}
-</style></head><body><main><header class="head"><div><b>Australia 2026 <small>V8</small></b><div class="muted" id="mode">连接中…</div></div><button class="btn soft" id="login">Google 登录</button></header><div class="status" id="status">☁ 正在读取最新行程…</div><nav class="tabs" id="tabs"></nav><div id="view"></div></main><div class="toast" id="toast"></div>
+</style></head><body><main><header class="head"><div><b>Australia 2026 <small>V8.1</small></b><div class="muted" id="mode">连接中…</div></div><button class="btn soft" id="login">Google 登录</button></header><div class="status" id="status">☁ 正在读取最新行程…</div><nav class="tabs" id="tabs"></nav><div id="view"></div></main><div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
 const sb=supabase.createClient("https://dstkvlhjomuyoceijfft.supabase.co","sb_publishable_DkP-qII7LMS2C-FuBhPAeQ_tOeA_MiM");
 const hotels={"2026-09-26":"搭子悉尼住宿 · 待补充","2026-09-27":"TRYP by Wyndham Southport Gold Coast","2026-09-28":"TRYP by Wyndham Southport Gold Coast","2026-09-29":"TRYP by Wyndham Southport Gold Coast","2026-09-30":"TRYP by Wyndham Southport Gold Coast","2026-10-01":"悉尼住宿 · 待补充","2026-10-02":"悉尼住宿 · 待补充","2026-10-03":"悉尼住宿 · 待补充","2026-10-04":"今晚不住宿"};
@@ -16,4 +16,39 @@ function render(){document.querySelectorAll(".tab").forEach(b=>b.classList.toggl
 window.completeEvent=async id=>{if(!session)return;let e=events.find(x=>x.id===id),r=await sb.rpc("set_event_completed",{p_event:id,p_completed:!e.completed});if(r.error)return toast(r.error.message);e.completed=!e.completed;render()};
 window.editEvent=async id=>{if(!session)return;let e=events.find(x=>x.id===id),time=prompt("时间",String(e.event_time).slice(0,5));if(time===null)return,title=prompt("行程",e.title);if(title===null)return,place=prompt("地点 / 导航",e.place_name||"");if(place===null)return;let r=await sb.from("events").update({event_time:time+":00",title,place_name:place}).eq("id",id).select().single();if(r.error)return toast(r.error.message);Object.assign(e,r.data);render();toast("已同步")};
 sb.auth.onAuthStateChange(()=>setTimeout(boot,0));boot();setInterval(async()=>{if(trip){await load();render()}},120000);
-</script></body></html>
+</script>
+<script>
+/* V8.1 travel helpers: food + transport status + practical hotel links */
+const V81_FOOD={
+"2026-09-27":[["Sydney Fish Market","Sydney Fish Market"],["Darling Square / Chinatown","Darling Square Sydney"]],
+"2026-09-28":[["海鲜 / Fish & Chips","Main Beach Gold Coast restaurants"],["Southport 晚餐","Southport Gold Coast restaurants"]],
+"2026-09-29":[["主题乐园内午餐","Dreamworld restaurants"],["Southport 晚餐","Southport Gold Coast restaurants"]],
+"2026-09-30":[["Burleigh 午餐 / 咖啡","Burleigh Heads restaurants"],["黄金海岸漂亮饭","Gold Coast waterfront restaurants"]],
+"2026-10-01":[["Circular Quay 简餐","Circular Quay restaurants"],["海港景观晚餐","Sydney Harbour restaurants"]],
+"2026-10-02":[["Kiama 午餐","Kiama restaurants"],["Kiama 咖啡","Kiama cafes"]],
+"2026-10-03":[["Darling Harbour 午餐","Darling Harbour restaurants"],["Bondi 晚餐","Bondi Beach restaurants"]],
+"2026-10-04":[["机场用餐","Sydney Airport Terminal 1 food"]]
+};
+const V81_TRANSPORT={
+"2026-09-27":[["✈ VA547","20:50 SYD T2 → 22:10 OOL T1","Sydney Airport Terminal 2"]],
+"2026-10-01":[["✈ VA512","09:20 OOL T1 → 10:50 SYD T2","Gold Coast Airport"]],
+"2026-10-02":[["🚆 South Coast Line","Sydney ↔ Kiama · 出发当天再次核验","Kiama Station"]],
+"2026-10-04":[["✈ CZ326","11:05 Sydney T1 起飞","Sydney Airport Terminal 1"]]
+};
+function v81Card(title,items){
+ if(!items?.length)return "";
+ return `<div class="card"><b>${title}</b>${items.map(x=>`<div style="padding:9px 0;border-top:1px solid #eee7dd"><b>${x[0]}</b><div class="muted">${x[1]||""}</div>${x[2]?`<a target="_blank" href="${map(x[2])}" style="font-size:12px;color:#176d87">🧭 导航</a>`:""}</div>`).join("")}</div>`;
+}
+const v81OldRender=window.render;
+window.render=function(){
+ v81OldRender();
+ if(cur==="总览")return;
+ const view=document.getElementById("view"); if(!view)return;
+ view.insertAdjacentHTML("beforeend",v81Card("🚋 交通",V81_TRANSPORT[cur]));
+ let food=(V81_FOOD[cur]||[]).map(x=>[x[0],"附近/顺路选择，不锁死时间",x[1]]);
+ view.insertAdjacentHTML("beforeend",v81Card("🍴 吃什么",food));
+ if(cur==="2026-10-02")view.insertAdjacentHTML("beforeend",`<div class="card"><b>⚠ Kiama 提醒</b><div class="muted">当天重点检查 South Coast Line 是否有工程、替代巴士或班次变化。</div></div>`);
+ if(cur==="2026-09-27")view.insertAdjacentHTML("beforeend",`<div class="card"><b>下午弹性原则</b><div class="muted">Fish Market → 悉尼大学/Glebe → Darling Harbour。任何一项来不及都可跳过，17:30左右优先转向机场。</div></div>`);
+};
+</script>
+</body></html>
