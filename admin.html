@@ -1,14 +1,14 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trip 管理 V10.4</title>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trip 管理 V11</title>
 <style>
 body{margin:0;background:#f5f2eb;color:#17232b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}main{max-width:760px;margin:auto;padding:14px}.head{display:flex;justify-content:space-between;align-items:center}.btn{border:0;border-radius:999px;padding:9px 12px;font-weight:700;background:#e8f1f3;color:#17596b;text-decoration:none}.primary{background:#176d87;color:white}.status,.card{background:#fffefa;border:1px solid #e5ddd1;border-radius:15px;padding:12px;margin-top:10px}.event{display:grid;grid-template-columns:55px 1fr auto;gap:8px;padding:11px 0;border-top:1px solid #eee7dd}.event:first-child{border-top:0}.muted{font-size:12px;color:#748087}.tabs{display:flex;gap:6px;overflow:auto;margin-top:10px}.tab{border:1px solid #e5ddd1;background:#fffefa;border-radius:999px;padding:8px 10px;white-space:nowrap}.tab.on{background:#173d4b;color:#fff}.error{background:#fff0ed;color:#8a2f24}
 
 .modal{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;padding:16px;z-index:20}
-.modal.on{display:flex}.dialog{width:min(560px,100%);background:#fffefa;border-radius:20px;padding:16px;box-shadow:0 18px 60px #0003}
-.field{margin:10px 0}.field label{display:block;font-size:12px;color:#748087;margin-bottom:5px}
-.field input,.field textarea{width:100%;border:1px solid #ddd4c7;border-radius:11px;padding:10px;font:inherit;background:white}
+.modal.on{display:flex}.dialog{width:min(460px,96%);background:#fffefa;border-radius:18px;padding:12px;box-shadow:0 18px 60px #0003;max-height:82vh;overflow:auto}
+.field{margin:6px 0}.field label{display:block;font-size:11px;color:#748087;margin-bottom:3px}
+.field input,.field textarea{width:100%;border:1px solid #ddd4c7;border-radius:9px;padding:7px 9px;font:inherit;background:white}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.dialog .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
 </style></head><body><main>
-<div class="head"><div><b>Australia 2026 · 管理 V10.4</b><div class="muted">本地 Supabase SDK</div></div><a class="btn" href="index.html">← 查看页</a></div>
+<div class="head"><div><b>Australia 2026 · 管理 V11</b><div class="muted">本地 Supabase SDK</div></div><a class="btn" href="index.html">← 查看页</a></div>
 <div class="status" id="status">后台已打开 · 可直接登录</div>
 <div style="margin-top:10px"><button class="btn primary" id="loginBtn">Google 登录</button> <button class="btn" id="retryBtn">检查登录状态</button></div>
 <div class="tabs" id="tabs"></div><div id="view"></div><div class="modal" id="editModal"><div class="dialog">
@@ -17,6 +17,7 @@ body{margin:0;background:#f5f2eb;color:#17232b;font-family:-apple-system,BlinkMa
 <div class="field"><label>📍 导航地点名称</label><input id="fPlace" placeholder="例如 Sydney Fish Market"></div>
 <div class="field"><label>Google Maps 链接 / 经纬度（可选，精确导航）</label><input id="fMap" placeholder="粘贴 Google Maps 链接，或 -33.8688,151.2093"></div>
 <div class="field"><label>备注</label><textarea id="fNote" rows="3" placeholder="可选"></textarea></div>
+<div id="liveEditPreview" style="background:#f0f4f3;border-radius:10px;padding:8px;margin:7px 0;font-size:13px"></div>
 <div class="actions"><button class="btn" id="mapSearch">Google Maps 搜索</button><button class="btn" id="testNav">测试导航</button><button class="btn" id="cancelEdit">取消</button><button class="btn primary" id="saveEdit">保存</button></div>
 </div></div></main>
 <script src="./supabase.js"></script>
@@ -61,6 +62,11 @@ async function load(){
 function makeTabs(){let ds=[...new Set(events.map(e=>e.event_date))];cur=cur||ds[0];$("#tabs").innerHTML=ds.map(d=>`<button class="tab" data-d="${d}">${d.slice(5).replace("-","/")}</button>`).join("");document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{cur=b.dataset.d;render()});render()}
 function render(){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.d===cur));let a=events.filter(e=>e.event_date===cur);$("#view").innerHTML='<div class="card">'+a.map(e=>`<div class="event"><b>${String(e.event_time).slice(0,5)}</b><div><b>${e.title}</b><div class="muted">${e.place_name||""}</div></div><div><button class="btn" onclick="editE('${e.id}')">编辑</button> <button class="btn" onclick="doneE('${e.id}')">${e.completed?"取消完成":"完成"}</button></div></div>`).join("")+"</div>"}
 let editingId=null;
+function updatePreview(){
+ const t=$("#fTime").value||"--:--", title=$("#fTitle").value||"未命名行程", place=$("#fPlace").value||"未设置导航地点";
+ const p=$("#liveEditPreview"); if(p)p.innerHTML=`<small style="color:#748087">实时预览</small><br><b>${t} · ${title}</b><br><span style="color:#748087">📍 ${place}</span>`;
+}
+["#fTime","#fTitle","#fPlace","#fMap","#fNote"].forEach(q=>$(q)?.addEventListener("input",updatePreview));
 function navTarget(){
  const m=$("#fMap").value.trim(), p=$("#fPlace").value.trim();
  return m||p;
@@ -72,7 +78,7 @@ window.editE=id=>{
  $("#fPlace").value=e.place_name||"";
  $("#fMap").value=e.map_url||"";
  $("#fNote").value=e.notes||"";
- $("#editModal").classList.add("on");
+ updatePreview();$("#editModal").classList.add("on");
 };
 $("#cancelEdit").onclick=()=>$("#editModal").classList.remove("on");
 $("#mapSearch").onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent($("#fPlace").value.trim()),"_blank");
