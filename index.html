@@ -193,6 +193,52 @@ async function tcSaveEdit(e,time,title,place){
   let r=await TC_SB.from("events").update({event_time:time+":00",title,place_name:place}).eq("id",e.id).select().single();
   if(r.error){alert(r.error.message);return}Object.assign(e,r.data);tcShowCloud();
 }
-setTimeout(tcInitCloud,500);
+/* V7.1 replaces prior auto-init */
+</script>
+
+<script>
+/* ===== V7.1 deterministic cloud bootstrap ===== */
+async function tc71Status(kind,msg){
+ let el=document.getElementById("tc71");
+ if(!el){el=document.createElement("div");el.id="tc71";el.style.cssText="max-width:760px;margin:8px auto;padding:10px 12px;border-radius:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;font-size:13px";
+ document.body.insertBefore(el,document.body.firstChild);}
+ el.style.background=kind==="error"?"#fff0ed":kind==="ok"?"#eaf6ef":"#eef4f6";
+ el.style.color=kind==="error"?"#8a2f24":"#234"; el.textContent=msg;
+}
+async function tc71Boot(){
+ try{
+   await tc71Status("info","☁ 正在连接 Trip Companion 云端…");
+   if(!window.tripSupabase) throw new Error("Supabase 客户端未初始化");
+   const {data:{session},error:se}=await window.tripSupabase.auth.getSession();
+   if(se) throw se;
+   if(!session){await tc71Status("info","本地模式 · 请先使用 Google 登录");return}
+   TC_USER=session.user;
+   let q=await window.tripSupabase.from("trips").select("*").eq("slug","australia-2026").limit(1);
+   if(q.error) throw new Error("读取 trips 失败："+q.error.message);
+   if(q.data && q.data.length){
+     TC_TRIP=q.data[0];
+   }else{
+     let c=await window.tripSupabase.from("trips").insert({
+       owner_id:TC_USER.id,name:"Australia 2026",slug:"australia-2026",
+       start_date:"2026-09-26",end_date:"2026-10-04",timezone:"Australia/Sydney"
+     }).select().single();
+     if(c.error) throw new Error("创建 trip 失败："+c.error.message);
+     TC_TRIP=c.data;
+     let rows=TC_SEED.map(x=>({trip_id:TC_TRIP.id,event_date:x[0],event_time:x[1]+":00",title:x[2],place_name:x[3],locked:x[4],created_by:TC_USER.id}));
+     let ins=await window.tripSupabase.from("events").insert(rows);
+     if(ins.error) throw new Error("导入 events 失败："+ins.error.message);
+   }
+   let ev=await window.tripSupabase.from("events").select("*").eq("trip_id",TC_TRIP.id).order("event_date").order("event_time");
+   if(ev.error) throw new Error("读取 events 失败："+ev.error.message);
+   TC_EVENTS=ev.data||[];
+   await tc71Status("ok",`☁ Australia 2026 云端正常 · ${TC_EVENTS.length} 个行程项目`);
+   tcInstallCloudPanel();
+ }catch(err){
+   console.error("V7.1 cloud init",err);
+   await tc71Status("error","⚠ 云端初始化失败："+(err?.message||String(err)));
+ }
+}
+window.tripSupabase?.auth?.onAuthStateChange(()=>setTimeout(tc71Boot,100));
+setTimeout(tc71Boot,900);
 </script>
 </body></html>
