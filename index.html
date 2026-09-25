@@ -102,4 +102,97 @@ async function ensureProfile(u){
 tripSupabase.auth.onAuthStateChange(()=>setTimeout(renderTripAuth,0));
 renderTripAuth();
 </script>
+
+<script>
+/* ===== Trip Companion V7 Cloud Data Layer ===== */
+const TC_SB = window.tripSupabase;
+let TC_USER=null, TC_TRIP=null, TC_EVENTS=[], TC_EDIT=null;
+const TC_SEED=[
+["2026-09-26","12:00","搭子抵达 / 入住","",false],["2026-09-26","15:00","附近休息 / 随便逛","",false],
+["2026-09-27","08:00","Jamin 抵达悉尼","Sydney Airport",true],["2026-09-27","11:30","和搭子汇合","Sydney",false],["2026-09-27","12:00","Sydney Fish Market","Sydney Fish Market",false],["2026-09-27","13:30","University of Sydney / Glebe","University of Sydney",false],["2026-09-27","15:00","Darling Harbour","Darling Harbour Sydney",false],["2026-09-27","17:30","前往 Sydney T2","Sydney Airport Terminal 2",true],["2026-09-27","20:50","VA547 · SYD T2 → OOL T1","Sydney Airport Terminal 2",true],["2026-09-27","22:45","前往 Southport / 入住 TRYP","TRYP by Wyndham Southport Gold Coast",true],
+["2026-09-28","09:30","早餐 / 慢慢出发","Southport Gold Coast",false],["2026-09-28","11:30","Kokomo Cruises 观鲸","Kokomo Cruises Gold Coast",true],["2026-09-28","15:00","Surfers Paradise / 海边","Surfers Paradise",false],
+["2026-09-29","09:00","前往主题乐园","Dreamworld",false],["2026-09-29","10:00","Dreamworld / 主题乐园","Dreamworld",false],
+["2026-09-30","09:30","Surfers Paradise / 海岸线","Surfers Paradise",false],["2026-09-30","14:00","Burleigh / 沙滩 / 咖啡","Burleigh Heads",false],
+["2026-10-01","07:00","从 Southport 前往 OOL","Gold Coast Airport",true],["2026-10-01","09:20","VA512 · OOL T1 → SYD T2","Gold Coast Airport",true],["2026-10-01","13:30","Circular Quay · Opera House","Sydney Opera House",false],["2026-10-01","15:30","The Rocks · Harbour Bridge","The Rocks Sydney",false],
+["2026-10-02","08:00","Sydney → Kiama","Kiama Station",true],["2026-10-02","10:30","Kiama Harbour / 小镇","Kiama Harbour",false],["2026-10-02","14:00","Blowhole · 海岸步道","Kiama Blowhole",false],["2026-10-02","17:00","返回悉尼","Kiama Station",true],
+["2026-10-03","10:00","WILD LIFE Sydney Zoo","WILD LIFE Sydney Zoo",true],["2026-10-03","14:00","Bondi Beach","Bondi Beach",false],
+["2026-10-04","08:00","整理 / 前往机场","Sydney Airport Terminal 1",true],["2026-10-04","11:05","CZ326 · Sydney 起飞","Sydney Airport Terminal 1",true]
+];
+
+async function tcInitCloud(){
+  if(!TC_SB) return;
+  const {data:{session}}=await TC_SB.auth.getSession();
+  TC_USER=session?.user||null;
+  if(!TC_USER) return;
+  let q=await TC_SB.from("trips").select("*").eq("slug","australia-2026").limit(1);
+  if(q.error){console.error(q.error);return;}
+  if(q.data?.length) TC_TRIP=q.data[0];
+  else {
+    let c=await TC_SB.from("trips").insert({owner_id:TC_USER.id,name:"Australia 2026",slug:"australia-2026",start_date:"2026-09-26",end_date:"2026-10-04",timezone:"Australia/Sydney"}).select().single();
+    if(c.error){console.error(c.error);alert("创建云端旅行失败："+c.error.message);return;}
+    TC_TRIP=c.data;
+    let rows=TC_SEED.map(x=>({trip_id:TC_TRIP.id,event_date:x[0],event_time:x[1]+":00",title:x[2],place_name:x[3],locked:x[4],created_by:TC_USER.id}));
+    let ins=await TC_SB.from("events").insert(rows);
+    if(ins.error){console.error(ins.error);alert("导入行程失败："+ins.error.message);return;}
+  }
+  await tcLoadCloud();
+  tcInstallCloudPanel();
+}
+
+async function tcLoadCloud(){
+  if(!TC_TRIP)return;
+  let r=await TC_SB.from("events").select("*").eq("trip_id",TC_TRIP.id).order("event_date").order("event_time");
+  if(r.error){console.error(r.error);return}
+  TC_EVENTS=r.data||[];
+  let state=document.getElementById("tripAuthBar");
+  if(state) state.title="Australia 2026 · "+TC_EVENTS.length+" 个云端行程";
+}
+
+function tcInstallCloudPanel(){
+  if(document.getElementById("tcCloudPanel"))return;
+  const panel=document.createElement("div");panel.id="tcCloudPanel";
+  panel.style.cssText="max-width:760px;margin:8px auto;padding:0 11px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif";
+  panel.innerHTML=`<div style="background:#fffefa;border:1px solid #e5ddd1;border-radius:16px;padding:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div><b>☁ Australia 2026 已连接云端</b><div style="font-size:12px;color:#748087">${TC_EVENTS.length} 个项目 · 编辑/完成状态写入 Supabase</div></div>
+      <button id="tcOpen" style="border:0;border-radius:999px;padding:8px 11px;background:#176d87;color:white;font-weight:700">云端行程</button>
+    </div></div>`;
+  const main=document.querySelector("main"); if(main) main.insertBefore(panel,main.firstChild); else document.body.appendChild(panel);
+  document.getElementById("tcOpen").onclick=tcShowCloud;
+}
+
+function tcShowCloud(){
+  let old=document.getElementById("tcCloudModal"); if(old)old.remove();
+  let modal=document.createElement("div");modal.id="tcCloudModal";modal.style.cssText="position:fixed;inset:0;background:#f5f2eb;z-index:99;overflow:auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;color:#17232b";
+  let dates=[...new Set(TC_EVENTS.map(e=>e.event_date))];
+  let html=`<div style="max-width:760px;margin:auto;padding:12px 12px 90px"><div style="display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:20px">Australia 2026 · 云端</b><div style="font-size:12px;color:#748087">直接修改 Supabase 数据</div></div><button onclick="document.getElementById('tcCloudModal').remove()" style="border:0;border-radius:999px;padding:8px 11px">返回</button></div>`;
+  for(const d of dates){
+    html+=`<h3 style="margin:18px 2px 6px">${d.slice(5).replace("-","/")}</h3><div style="background:#fffefa;border:1px solid #e5ddd1;border-radius:16px;padding:8px 12px">`;
+    for(const e of TC_EVENTS.filter(x=>x.event_date===d)){
+      html+=`<div style="display:grid;grid-template-columns:50px 1fr auto;gap:8px;padding:11px 0;border-top:1px solid #eee7dd;opacity:${e.completed?.35:1}">
+      <b>${String(e.event_time).slice(0,5)}</b><div><b>${e.title}</b><div style="font-size:12px;color:#748087">${e.place_name||""}${e.locked?" · 🔒":""}</div><div style="margin-top:7px"><a target="_blank" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.place_name||e.title)}" style="font-size:12px;color:#176d87">🧭 导航</a>　<button onclick="tcEdit('${e.id}')" style="border:0;background:none;color:#176d87">编辑</button></div></div>
+      <button onclick="tcComplete('${e.id}')" style="border:0;border-radius:999px;padding:6px 8px">${e.completed?"✓":"○"}</button></div>`;
+    } html+="</div>";
+  }
+  html+=`</div>`;modal.innerHTML=html;document.body.appendChild(modal);
+}
+
+async function tcComplete(id){
+  let e=TC_EVENTS.find(x=>x.id===id);if(!e)return;
+  let r=await TC_SB.rpc("set_event_completed",{p_event:id,p_completed:!e.completed});
+  if(r.error){alert(r.error.message);return}e.completed=!e.completed;tcShowCloud();
+}
+function tcEdit(id){
+  let e=TC_EVENTS.find(x=>x.id===id);if(!e)return;
+  let time=prompt("时间 HH:MM",String(e.event_time).slice(0,5));if(time===null)return;
+  let title=prompt("行程",e.title);if(title===null)return;
+  let place=prompt("地点（用于导航）",e.place_name||"");if(place===null)return;
+  tcSaveEdit(e,time,title,place);
+}
+async function tcSaveEdit(e,time,title,place){
+  let r=await TC_SB.from("events").update({event_time:time+":00",title,place_name:place}).eq("id",e.id).select().single();
+  if(r.error){alert(r.error.message);return}Object.assign(e,r.data);tcShowCloud();
+}
+setTimeout(tcInitCloud,500);
+</script>
 </body></html>
