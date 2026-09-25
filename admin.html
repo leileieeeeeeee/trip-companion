@@ -1,8 +1,8 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trip 管理 V10.1</title>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trip 管理 V10.2</title>
 <style>
 body{margin:0;background:#f5f2eb;color:#17232b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}main{max-width:760px;margin:auto;padding:14px}.head{display:flex;justify-content:space-between;align-items:center}.btn{border:0;border-radius:999px;padding:9px 12px;font-weight:700;background:#e8f1f3;color:#17596b;text-decoration:none}.primary{background:#176d87;color:white}.status,.card{background:#fffefa;border:1px solid #e5ddd1;border-radius:15px;padding:12px;margin-top:10px}.event{display:grid;grid-template-columns:55px 1fr auto;gap:8px;padding:11px 0;border-top:1px solid #eee7dd}.event:first-child{border-top:0}.muted{font-size:12px;color:#748087}.tabs{display:flex;gap:6px;overflow:auto;margin-top:10px}.tab{border:1px solid #e5ddd1;background:#fffefa;border-radius:999px;padding:8px 10px;white-space:nowrap}.tab.on{background:#173d4b;color:#fff}.error{background:#fff0ed;color:#8a2f24}
 </style></head><body><main>
-<div class="head"><div><b>Australia 2026 · 管理 V10.1</b><div class="muted">本地 Supabase SDK</div></div><a class="btn" href="index.html">← 查看页</a></div>
+<div class="head"><div><b>Australia 2026 · 管理 V10.2</b><div class="muted">本地 Supabase SDK</div></div><a class="btn" href="index.html">← 查看页</a></div>
 <div class="status" id="status">后台已打开 · 可直接登录</div>
 <div style="margin-top:10px"><button class="btn primary" id="loginBtn">Google 登录</button> <button class="btn" id="retryBtn">检查登录状态</button></div>
 <div class="tabs" id="tabs"></div><div id="view"></div></main>
@@ -47,7 +47,20 @@ async function load(){
 }
 function makeTabs(){let ds=[...new Set(events.map(e=>e.event_date))];cur=cur||ds[0];$("#tabs").innerHTML=ds.map(d=>`<button class="tab" data-d="${d}">${d.slice(5).replace("-","/")}</button>`).join("");document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{cur=b.dataset.d;render()});render()}
 function render(){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.d===cur));let a=events.filter(e=>e.event_date===cur);$("#view").innerHTML='<div class="card">'+a.map(e=>`<div class="event"><b>${String(e.event_time).slice(0,5)}</b><div><b>${e.title}</b><div class="muted">${e.place_name||""}</div></div><div><button class="btn" onclick="editE('${e.id}')">编辑</button> <button class="btn" onclick="doneE('${e.id}')">${e.completed?"取消完成":"完成"}</button></div></div>`).join("")+"</div>"}
-window.editE=async id=>{try{let e=events.find(x=>x.id===id),time=prompt("时间",String(e.event_time).slice(0,5));if(time===null)return,title=prompt("行程",e.title);if(title===null)return,place=prompt("地点 / 导航",e.place_name||"");if(place===null)return;let r=await sb.from("events").update({event_time:time+":00",title,place_name:place}).eq("id",id).select().single();if(r.error)throw r.error;Object.assign(e,r.data);render();msg("✓ 已同步修改")}catch(e){msg("⚠ "+e.message,true)}}
+window.editE=async id=>{
+ try{
+  const e=events.find(x=>x.id===id);
+  const time=prompt("时间",String(e.event_time).slice(0,5));
+  if(time===null)return;
+  const title=prompt("行程",e.title);
+  if(title===null)return;
+  const place=prompt("地点 / 导航",e.place_name||"");
+  if(place===null)return;
+  const r=await sb.from("events").update({event_time:time+":00",title:title,place_name:place}).eq("id",id).select().single();
+  if(r.error)throw r.error;
+  Object.assign(e,r.data);render();msg("✓ 已同步修改");
+ }catch(e){msg("⚠ "+e.message,true)}
+}
 window.doneE=async id=>{try{let e=events.find(x=>x.id===id),r=await sb.rpc("set_event_completed",{p_event:id,p_completed:!e.completed});if(r.error)throw r.error;e.completed=!e.completed;render();msg("✓ 完成状态已同步")}catch(e){msg("⚠ "+e.message,true)}}
 $("#loginBtn").onclick=googleLogin; $("#retryBtn").onclick=check;
 setTimeout(check,150);
