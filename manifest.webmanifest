@@ -1,0 +1,8 @@
+{
+  "name": "Trip Companion",
+  "short_name": "Trip",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f2eb",
+  "theme_color": "#173d4b"
+}

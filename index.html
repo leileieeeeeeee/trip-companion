@@ -1,0 +1,59 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#173d4b"><title>Australia 2026 · V5</title>
+<style>
+:root{--bg:#f5f2eb;--card:#fffefa;--ink:#17232b;--muted:#748087;--line:#e5ddd1;--blue:#176d87;--navy:#173d4b;--gold:#d69a3b;--red:#b84e4e;--green:#3f8068}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}button{font:inherit}main{max-width:760px;margin:auto;padding:10px 11px 90px}
+.head{display:flex;justify-content:space-between;align-items:center;padding:7px 3px}.title b{font-size:18px}.title small{display:block;color:var(--muted)}.avatars{display:flex}.av{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#dceff3;color:#17495a;font-weight:800;border:2px solid var(--bg);margin-left:-5px}.av.b{background:#f1d29a;color:#64491d}
+.tabs{display:flex;gap:7px;overflow:auto;position:sticky;top:0;background:linear-gradient(var(--bg) 83%,transparent);padding:8px 0 7px;z-index:5}.tab{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 11px;white-space:nowrap;font-weight:750;color:#5b656c}.tab.on{background:var(--navy);color:white}.tab.past{opacity:.38}
+.now{background:linear-gradient(135deg,#173d4b,#18748c);color:white;border-radius:21px;padding:16px;margin-top:3px}.now small{opacity:.72}.now h2{margin:4px 0 2px;font-size:23px}.now p{margin:5px 0 0;opacity:.86}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.btn{border:0;border-radius:999px;padding:8px 11px;font-weight:750;background:#e9f1f3;color:#17596b}.now .btn{background:#ffffff22;color:#fff}.now .primary{background:white;color:#17495a}.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:13px;margin-top:9px}.status{font-size:12px;color:var(--muted)}.hotel{border-left:4px solid var(--gold)}.event{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:12px 0;border-top:1px solid #eee7dd;transition:.2s}.event:first-child{border-top:0}.event.done{opacity:.32}.event.overdue{background:#fff7e8;margin:0 -7px;padding-left:7px;padding-right:7px;border-radius:10px}.event b{font-size:14px}.event small{color:var(--muted);line-height:1.4}.pill{font-size:10px;border-radius:999px;padding:4px 6px;background:#edf2f3;align-self:start}.lock{background:#eee8df}.warn{background:#fff0cf;color:#7b571e}.food{display:flex;justify-content:space-between;align-items:center;gap:8px}.bottom{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);width:min(95%,735px);display:flex;gap:7px;padding:7px;background:#fffefae9;backdrop-filter:blur(11px);border:1px solid var(--line);border-radius:17px;box-shadow:0 7px 25px #0002}.bottom button{flex:1}.primary{background:var(--blue);color:white}.dark{background:#252b31;color:white}.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{background:#f7f4ed;border-radius:12px;padding:10px}.sheet{display:none;position:fixed;inset:0;background:#0005;z-index:20;align-items:flex-end}.sheet.on{display:flex}.sheetin{background:var(--card);width:min(100%,760px);margin:auto;border-radius:22px 22px 0 0;padding:17px 15px 27px}.sheetin h3{margin:0}.quick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.quick button{border:0;border-radius:12px;padding:12px;background:#f1eee7;font-weight:700}
+</style></head><body><main>
+<header class="head"><div class="title"><b>Australia 2026</b><small>悉尼 × 黄金海岸 · 本地模式</small></div><div class="avatars"><div class="av">J</div><div class="av b">搭</div></div></header>
+<nav class="tabs" id="tabs"></nav><div id="view"></div>
+</main>
+<div class="bottom"><button class="btn" onclick="food()">🍴 吃什么</button><button class="btn primary" onclick="update()">↻ 更新</button><button class="btn dark" onclick="gpt()">✦ GPT审核</button></div>
+<div class="sheet" id="sheet"><div class="sheetin"><h3 id="sheetTitle">快速调整</h3><p class="status" id="sheetText"></p><div class="quick"><button onclick="move('现在去')">现在去</button><button onclick="move('推迟30分钟')">推迟30分钟</button><button onclick="move('移到下午')">移到下午</button><button onclick="move('跳过')">跳过</button></div><div class="actions"><button class="btn" onclick="sheet.classList.remove('on')">取消</button></div></div></div>
+<script>
+const D=[
+{d:'2026-09-26',c:'悉尼',hotel:'搭子悉尼住宿 · 待补充',e:[['12:00','搭子抵达 / 入住','个人 · 以航变新订单为准','flex'],['15:00','附近休息 / 随便逛','不安排核心景点','flex'],['18:30','晚餐','酒店附近即可','food']]},
+{d:'2026-09-27',c:'悉尼 → 黄金海岸',hotel:'TRYP by Wyndham Southport Gold Coast',e:[['08:00','Jamin 抵达悉尼','SYD · 入境、整理、休息','lock'],['11:30','和搭子汇合','先吃午饭，轻松破冰','flex'],['12:00','Sydney Fish Market','午饭 + 蓝色路线第一站','flex'],['13:30','University of Sydney / Glebe','弹性，可随时缩短','flex'],['15:00','Darling Harbour','散步、咖啡、聊天','flex'],['17:30','前往 Sydney T2','根据实时交通动态提前','lock'],['20:50','VA547 · SYD T2 → OOL T1','22:10抵达 · 手提1×8kg','lock'],['22:45','前往 Southport / 入住 TRYP','今晚住黄金海岸','lock']]},
+{d:'2026-09-28',c:'黄金海岸',hotel:'TRYP by Wyndham Southport Gold Coast',e:[['09:30','早餐 / 慢慢出发','观鲸前不要吃太撑','flex'],['11:30','Kokomo Cruises 观鲸','已预订','lock'],['15:00','Surfers Paradise / 海边','看体力和天气','flex'],['18:30','回 Southport','自由活动','flex']]},
+{d:'2026-09-29',c:'黄金海岸',hotel:'TRYP by Wyndham Southport Gold Coast',e:[['09:00','前往主题乐园','园区待最终确认','flex'],['10:00','Dreamworld / 主题乐园','门票待确认','flex'],['18:30','回 Southport','晚餐 / 休息','flex']]},
+{d:'2026-09-30',c:'黄金海岸',hotel:'TRYP by Wyndham Southport Gold Coast',e:[['09:30','Surfers Paradise / 海岸线','弹性','flex'],['14:00','Burleigh / 沙滩 / 咖啡','按天气优化','flex'],['18:30','黄金海岸最后一晚','可安排漂亮饭','food']]},
+{d:'2026-10-01',c:'悉尼',hotel:'悉尼住宿 · 待补充',e:[['07:00','从 Southport 前往 OOL','实时检查机场交通','lock'],['09:20','VA512 · OOL T1 → SYD T2','10:50抵达','lock'],['12:00','寄存行李 / 午餐','进入市区','flex'],['13:30','Circular Quay · Opera House','核心景点','flex'],['15:30','The Rocks · Harbour Bridge','核心景点','flex'],['18:30','海港夜景 / 晚餐','可安排景观餐','food']]},
+{d:'2026-10-02',c:'Kiama',hotel:'悉尼住宿 · 待补充',e:[['08:00','Sydney → Kiama','重点监控 South Coast Line','lock'],['10:30','Kiama Harbour / 小镇','步行','flex'],['12:30','Kiama 午餐','当地餐厅 / 咖啡','food'],['14:00','Blowhole · 海岸步道','看天气和风况','flex'],['17:00','返回悉尼','返程班次实时核验','lock']]},
+{d:'2026-10-03',c:'悉尼',hotel:'悉尼住宿 · 待补充',e:[['10:00','WILD LIFE Sydney Zoo','Darling Harbour · 市区动物园','lock'],['12:00','午餐 / 转场','简单吃','food'],['14:00','Bondi Beach','海滩、散步、咖啡','flex'],['18:00','Bondi 晚餐 / 日落','按现场决定','food']]},
+{d:'2026-10-04',c:'返程',hotel:'今晚不住宿',e:[['08:00','整理 / 前往机场','国际航班预留时间','lock'],['11:05','CZ326 · Sydney 起飞','已确认','lock']]}
+];
+let cur='总览', today=new Date().toISOString().slice(0,10), done=JSON.parse(localStorage.getItem('doneV5')||'{}');
+function tab(){tabs.innerHTML='<button class="tab" data-x="总览">总览</button>'+D.map(x=>`<button class="tab ${x.d<today?'past':''}" data-x="${x.d}">${x.d.slice(5).replace('-','/')}</button>`).join('')+'<button class="tab" data-x="+">＋</button>';document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{if(b.dataset.x==='+'){alert('正式版：新增旅行日');return}cur=b.dataset.x;render()})}
+function mins(t){let [h,m]=t.split(':').map(Number);return h*60+m}
+function nowm(){let d=new Date();return d.getHours()*60+d.getMinutes()}
+function render(){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.x===cur));if(cur==='总览'){view.innerHTML=`<div class="now"><small>旅行尚未开始</small><h2>准备 Australia 2026</h2><p>出发后自动进入当天，并滚到第一个未完成项目。</p></div><div class="card"><div class="summary"><div class="box"><b>9/27</b>蓝色半日路线<br>20:50 VA547</div><div class="box"><b>9/28</b>11:30 观鲸</div><div class="box"><b>10/2</b>Kiama 一日游</div><div class="box"><b>10/3</b>市区动物园 + Bondi</div></div></div>`;return}
+let x=D.find(z=>z.d===cur), current=(cur===today?nowm():-1), next=x.e.find((e,i)=>!done[cur+'-'+i] && (cur!==today || mins(e[0])>=current)) || x.e.find((e,i)=>!done[cur+'-'+i]) || x.e[x.e.length-1];
+let ni=x.e.indexOf(next);let nowhtml=`<div class="now"><small>现在该干嘛 · ${x.c}</small><h2>${next[0]} · ${next[1]}</h2><p>${next[2]}</p><div class="actions"><button class="btn primary">🧭 导航</button><button class="btn" onclick="editItem(${ni})">长按/调整</button></div></div>`;
+let ev=x.e.map((e,i)=>{let key=cur+'-'+i,isdone=!!done[key],over=cur===today&&!isdone&&mins(e[0])<current;return `<div class="event ${isdone?'done':''} ${over?'overdue':''}" ontouchstart="hold(event,${i})" onmousedown="hold(event,${i})" onmouseup="cancelHold()" ontouchend="cancelHold()"><b>${e[0]}</b><div><b>${e[1]}</b><br><small>${e[2]}${over?' · ⚠️ 时间已过但尚未完成':''}</small></div><button class="pill ${e[3]==='lock'?'lock':over?'warn':''}" onclick="toggleDone(${i})">${isdone?'✓':e[3]==='lock'?'🔒':'○'}</button></div>`}).join('');
+view.innerHTML=nowhtml+`<div class="card hotel"><small class="status">🏨 今晚住哪</small><b style="display:block;margin-top:3px">${x.hotel}</b></div><div class="card" id="timeline">${ev}</div>`;
+setTimeout(()=>{let o=document.querySelector('.overdue')||document.querySelector('.event:not(.done)');if(o&&cur===today)o.scrollIntoView({block:'center'})},80)}
+function toggleDone(i){done[cur+'-'+i]=!done[cur+'-'+i];localStorage.setItem('doneV5',JSON.stringify(done));render()}
+let timer;function hold(e,i){timer=setTimeout(()=>editItem(i),550)}function cancelHold(){clearTimeout(timer)}
+function editItem(i){let x=D.find(z=>z.d===cur).e[i];sheetTitle.textContent=x[1];sheetText.textContent=x[0]+' · '+x[2];sheet.classList.add('on')}
+function move(a){alert('原型：'+a+'。正式版会直接重排时间轴并保存。');sheet.classList.remove('on')}
+function food(){alert('吃什么：正式版根据当前位置和下一站给“顺路/附近”餐厅，主要提供导航，不强制绑定时间。')}
+function update(){alert('正式版：更新天气、穿衣、公交/轻轨、航班和营业状态；异常才突出显示。')}
+function gpt(){alert('正式版：GPT审核所有尚未开始/未完成项目，返回结构化修改；确认后直接更新页面。多人项目则发送给相关成员确认。')}
+tab();if(today>='2026-09-26'&&today<='2026-10-04')cur=today;render();
+</script>
+<script>
+window.TRIP_RUNTIME={
+  supabaseUrl:"https://dstkvlhjomuyoceijfft.supabase.co",
+  supabasePublishableKey:"sb_publishable_DkP-qII7LMS2C-FuBhPAeQ_tOeA_MiM",
+  mode:"local-first"
+};
+async function liveWeatherFor(city){
+ const p=city.includes("黄金")?[-28.0167,153.4]:city.includes("Kiama")?[-34.6713,150.8565]:[-33.8688,151.2093];
+ const u=`https://api.open-meteo.com/v1/forecast?latitude=${p[0]}&longitude=${p[1]}&current=temperature_2m,apparent_temperature,precipitation,wind_speed_10m&timezone=auto`;
+ try{const j=await fetch(u).then(r=>r.json());localStorage.setItem("weather:"+city,JSON.stringify(j));return j.current}
+ catch(e){const j=JSON.parse(localStorage.getItem("weather:"+city)||"null");return j?.current||null}
+}
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js");
+</script>
+</body></html>
