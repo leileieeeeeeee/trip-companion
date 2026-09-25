@@ -63,6 +63,7 @@ const tripSupabase = window.supabase.createClient(
   "https://dstkvlhjomuyoceijfft.supabase.co",
   "sb_publishable_DkP-qII7LMS2C-FuBhPAeQ_tOeA_MiM"
 );
+window.tripSupabase = tripSupabase;
 async function tripSignIn(){
   const {error}=await tripSupabase.auth.signInWithOAuth({
     provider:"google",
